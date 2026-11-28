@@ -26,6 +26,14 @@ Unofficial [Bluesky](https://bsky.app), [Misskey](https://misskey-hub.net), [Mas
     <td><img src="crates/bluesky-terminal-client/doc/img/demo.gif" width="100%" alt="bsky: the timeline scrolled, then a search"></td>
     <td><img src="crates/misskey-terminal-client/doc/img/demo.gif" width="100%" alt="msky: the timeline, a note's pictures and video, a thread, a profile and the notifications"></td>
   </tr>
+  <tr>
+    <th width="50%">mstdn (Mastodon)</th>
+    <th width="50%">nstr (Nostr)</th>
+  </tr>
+  <tr>
+    <td><img src="crates/mastodon-terminal-client/doc/demo/demo.gif" width="100%" alt="mstdn: posts from other servers with a content warning and a poll, then a video in the viewer"></td>
+    <td><img src="crates/nostr-terminal-client/doc/demo/demo.gif" width="100%" alt="nstr: a relay timeline with NIP-05 names and a long note, then a picture and a video in the viewer"></td>
+  </tr>
 </table>
 
 | Client | Crate | Version | Downloads |
@@ -110,7 +118,7 @@ Only bsky makes link cards and speaks nine languages (msky and mstdn speak Engli
 |:--:|:--:|
 | ![bsky: a picture and a video, full screen](crates/bluesky-terminal-client/doc/img/viewer.gif) | ![msky: the picture browser of the composer](crates/misskey-terminal-client/doc/img/compose.png) |
 | msky `v`: thread | bsky `/`: search box |
-| ![msky: a thread](crates/misskey-terminal-client/doc/img/thread.png) | ![bsky: accounts found for a search](crates/bluesky-terminal-client/doc/img/search.png) |
+| ![msky: a thread](crates/misskey-terminal-client/doc/img/thread.png) | ![bsky: posts found from the search box](crates/bluesky-terminal-client/doc/img/search.png) |
 | bsky `.`: actions | msky `e`: edit your profile |
 | ![bsky: the list of what the keys do to a post](crates/bluesky-terminal-client/doc/img/actions.png) | ![msky: the profile editor](crates/misskey-terminal-client/doc/img/editor.png) |
 | msky `6`: chat | bsky `A`: accounts |
