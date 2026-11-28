@@ -30,3 +30,7 @@ a0cbd655cb4aa189e4cc3006fe44e187d125eb29:crates/nostr-terminal-client/tests/test
 a0cbd655cb4aa189e4cc3006fe44e187d125eb29:crates/nostr-terminal-client/tests/testdata/nip44-v2.json:generic-api-key:26
 a0cbd655cb4aa189e4cc3006fe44e187d125eb29:crates/nostr-terminal-client/tests/testdata/nip44-v2.json:generic-api-key:27
 a0cbd655cb4aa189e4cc3006fe44e187d125eb29:crates/nostr-terminal-client/tests/testdata/nip44-v2.json:generic-api-key:28
+
+# The same made-up, expired access token, copied into the scenario list that
+# atago doc generates from timeline.atago.yaml.
+4f50a92ff994bf094f166218559244ddadf3993b:doc/e2e/bsky/mock/timeline.md:generic-api-key:856
