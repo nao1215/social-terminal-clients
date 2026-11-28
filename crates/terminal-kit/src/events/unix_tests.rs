@@ -3,7 +3,7 @@
 use super::*;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::fs::File;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::os::fd::{AsRawFd, FromRawFd};
 use std::process::Command;
 
@@ -97,6 +97,37 @@ fn a_key_ready_with_a_resize_is_delivered_without_another_key() {
     // An idle timeout must leave the reader able to wake on later input,
     // including a character whose UTF-8 encoding spans several bytes.
     assert_eq!(input.next(Duration::from_millis(2)).unwrap(), None);
+    // Ratatui's Terminal::clear asks for the cursor position after deleting
+    // kitty images. An idle input reader must leave that reply to the query.
+    let mut terminal = master.try_clone().unwrap();
+    let reply = std::thread::spawn(move || {
+        let mut query = [0; 4];
+        terminal.read_exact(&mut query).unwrap();
+        assert_eq!(&query, b"\x1b[6n");
+        terminal.write_all(b"\x1b[7;12Rz").unwrap();
+    });
+    assert_eq!(crossterm::cursor::position().unwrap(), (11, 6));
+    reply.join().unwrap();
+    // The same read may leave a key in crossterm's parser, with no tty bytes
+    // left to wake the readiness poll.
+    assert_eq!(
+        input.next(Duration::ZERO).unwrap(),
+        Some(Event::Key(KeyEvent::new(
+            KeyCode::Char('z'),
+            KeyModifiers::NONE
+        )))
+    );
+    let resize = std::thread::spawn(|| {
+        std::thread::sleep(Duration::from_millis(20));
+        // SAFETY: both readers have installed SIGWINCH handlers. Deliver it
+        // on another thread, so EINTR alone cannot wake the waiting reader.
+        assert_eq!(unsafe { libc::raise(libc::SIGWINCH) }, 0);
+    });
+    assert_eq!(
+        input.next(Duration::from_secs(1)).unwrap(),
+        Some(Event::Resize(40, 16))
+    );
+    resize.join().unwrap();
     master.write_all("😀".as_bytes()).unwrap();
     assert_eq!(
         input.next(Duration::from_secs(1)).unwrap(),
@@ -106,7 +137,7 @@ fn a_key_ready_with_a_resize_is_delivered_without_another_key() {
         )))
     );
     // Login and the main TUI create consecutive Inputs. Dropping an idle
-    // reader must wake its worker and let the next Input acquire the reader.
+    // reader must leave the next Input able to read keys and resize events.
     assert_eq!(input.next(Duration::from_millis(2)).unwrap(), None);
     drop(input);
     let mut input = Input::new().unwrap();
