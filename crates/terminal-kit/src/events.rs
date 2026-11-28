@@ -1,7 +1,14 @@
 //! Reading input events.
 //!
-//! Everywhere but Windows this is crossterm's `poll` and `read`. On Windows,
-//! crossterm 0.29 drops every character outside the Basic Multilingual Plane
+//! Unix uses crossterm's `use-dev-tty` reader (level-triggered poll). Its
+//! default mio reader can return a resize and discard a simultaneously
+//! ready key's edge, leaving that key unread until another key arrives.
+//!
+//! Wait for tty/resize readiness here, then let crossterm decode synchronously.
+//! A background EventStream holds the reader lock while idle, blocking the
+//! cursor-position query used by ratatui's Terminal::clear. Long timed polls
+//! in crossterm's tty backend also spin during the last fractional millisecond.
+//! On Windows, crossterm 0.29 drops every character outside the Basic Multilingual Plane
 //! (emoji, most of all): a terminal sends such a character as two UTF-16
 //! surrogates, each as a key-down and a key-up record, and crossterm pairs a
 //! surrogate's key-up with its own key-down, fails to decode the pair, and
@@ -17,8 +24,16 @@ use std::time::Duration;
 use crossterm::event;
 use crossterm::event::Event;
 
+#[cfg(all(test, target_os = "linux"))]
+mod unix_tests;
+
 /// The input events of the terminal the program runs in.
+///
+/// Keep one Input alive at a time. On Unix no background thread reads the tty;
+/// synchronous terminal queries can run between calls to next or drain.
 pub struct Input {
+    #[cfg(unix)]
+    reader: unix::Reader,
     #[cfg(windows)]
     console: windows::Console,
 }
@@ -30,13 +45,16 @@ impl Input {
         #[cfg(not(windows))]
         event::poll(Duration::ZERO)?;
         Ok(Input {
+            #[cfg(unix)]
+            reader: unix::Reader::new()?,
             #[cfg(windows)]
             console: windows::Console::new()?,
         })
     }
 
-    /// Handle at most `limit` events, waiting only for the first. A false
-    /// callback result stops immediately; the return value is the number handled.
+    /// Handle at most `limit` events, waiting only for the first (apart from
+    /// Unix's short parser probe below). A false callback result stops immediately;
+    /// the return value is the number handled.
     pub fn drain(
         &mut self,
         limit: usize,
@@ -46,16 +64,135 @@ impl Input {
         drain(limit, wait, |wait| self.next(wait), handle)
     }
 
-    /// The next event, waiting at most `wait` for one.
+    /// The next event, waiting for `wait`. Unix rounds the wait up to a
+    /// millisecond and adds a short parser probe, even for a zero wait
+    /// (crossterm's tty backend does not inspect its parser at zero).
     pub fn next(&mut self, wait: Duration) -> io::Result<Option<Event>> {
         #[cfg(windows)]
         return self.console.next(wait);
-        #[cfg(not(windows))]
-        return if event::poll(wait)? {
-            event::read().map(Some)
-        } else {
-            Ok(None)
-        };
+        #[cfg(unix)]
+        return self.reader.next(wait);
+    }
+}
+
+#[cfg(unix)]
+mod unix {
+    use super::*;
+    use std::fs::File;
+    use std::io::{IsTerminal, Read};
+    use std::os::fd::{AsFd, AsRawFd, OwnedFd};
+    use std::os::unix::net::UnixStream;
+    use std::time::Instant;
+
+    pub(super) struct Reader {
+        tty: OwnedFd,
+        resize: UnixStream,
+        signal: signal_hook::SigId,
+    }
+
+    impl Reader {
+        pub(super) fn new() -> io::Result<Self> {
+            // Match crossterm's tty selection. Only poll it: all input bytes,
+            // including replies to synchronous queries, belong to crossterm.
+            let stdin = io::stdin();
+            let tty = if stdin.is_terminal() {
+                stdin.as_fd().try_clone_to_owned()?
+            } else {
+                File::options()
+                    .read(true)
+                    .write(true)
+                    .open("/dev/tty")?
+                    .into()
+            };
+            let (resize, sender) = UnixStream::pair()?;
+            resize.set_nonblocking(true)?;
+            let signal = signal_hook::low_level::pipe::register(libc::SIGWINCH, sender)?;
+            Ok(Self {
+                tty,
+                resize,
+                signal,
+            })
+        }
+
+        pub(super) fn next(&mut self, wait: Duration) -> io::Result<Option<Event>> {
+            let deadline = Instant::now() + wait;
+            loop {
+                // Always probe the parser, even if the tty is no longer ready:
+                // a previous read (including a cursor query) can buffer keys.
+                // Zero skips the tty parser; 1 ms spends almost that entire
+                // millisecond spinning because filedescriptor rounds down.
+                // Bound that work to 100 us and do the actual wait below.
+                if event::poll(Duration::from_micros(100))? {
+                    return event::read().map(Some);
+                }
+                let left = deadline.saturating_duration_since(Instant::now());
+                if left.is_zero() {
+                    return Ok(None);
+                }
+                let mut fds = [
+                    libc::pollfd {
+                        fd: self.tty.as_raw_fd(),
+                        events: libc::POLLIN,
+                        revents: 0,
+                    },
+                    libc::pollfd {
+                        fd: self.resize.as_raw_fd(),
+                        events: libc::POLLIN,
+                        revents: 0,
+                    },
+                ];
+                // Round UP so a fractional millisecond sleeps instead of spins.
+                let ms = left.as_nanos().div_ceil(1_000_000);
+                let ms = i32::try_from(ms).unwrap_or(i32::MAX);
+                // SAFETY: both descriptors stay open, and fds has two entries.
+                let ready = unsafe { libc::poll(fds.as_mut_ptr(), fds.len() as libc::nfds_t, ms) };
+                if ready < 0 {
+                    let e = io::Error::last_os_error();
+                    if e.kind() == io::ErrorKind::Interrupted {
+                        continue;
+                    }
+                    return Err(e);
+                }
+                // Nothing can enter crossterm's parser while this thread is
+                // waiting. A timed-out readiness poll needs no second probe.
+                if ready == 0 {
+                    if Instant::now() >= deadline {
+                        return Ok(None);
+                    }
+                    continue;
+                }
+                if fds
+                    .iter()
+                    .any(|fd| fd.revents & (libc::POLLERR | libc::POLLHUP | libc::POLLNVAL) != 0)
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::UnexpectedEof,
+                        "terminal input closed",
+                    ));
+                }
+                // Our signal pipe only wakes the wait. Crossterm's own pipe
+                // supplies Event::Resize, including when a key is ready too.
+                if fds[1].revents & libc::POLLIN != 0 {
+                    loop {
+                        match self.resize.read(&mut [0; 256]) {
+                            Ok(0) => break,
+                            Ok(_) => {}
+                            Err(e) if e.kind() == io::ErrorKind::WouldBlock => break,
+                            Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                            Err(e) => return Err(e),
+                        }
+                    }
+                }
+                // Probe once more even at the deadline: readiness may have
+                // arrived just as the timeout expired.
+            }
+        }
+    }
+
+    impl Drop for Reader {
+        fn drop(&mut self) {
+            signal_hook::low_level::unregister(self.signal);
+        }
     }
 }
 
