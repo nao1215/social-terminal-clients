@@ -415,7 +415,7 @@ scenarios:
       - send: '/'
       - expect_screen:
           timeout: 10s
-          contains: Search
+          contains: Search · Posts
           stable_for: 200ms
       - send: compat-wide-root
       - send:
@@ -442,7 +442,7 @@ scenarios:
       - expect_screen:
           timeout: 10s
           stable_for: 200ms
-          contains: Search
+          contains: Search · Posts
       - send:
           key: ctrl-u
       - send: compat-upload-picture
@@ -471,7 +471,7 @@ scenarios:
       - expect_screen:
           timeout: 10s
           stable_for: 200ms
-          contains: Search
+          contains: Search · Posts
       - send:
           key: ctrl-u
       - send: compat-upload-video
@@ -500,20 +500,44 @@ scenarios:
       - expect_screen:
           timeout: 10s
           stable_for: 200ms
-          contains: Search
+          contains: Search · Posts
       - send:
           key: ctrl-u
       - send: compat_admin
       - send:
           key: ctrl-t
+      - expect_screen:
+          contains: Search · Accounts
+          timeout: 10s
       - send:
           key: enter
       - expect_screen:
           timeout: 10s
           stable_for: 200ms
           contains:
-          - Search accounts
+          - '1 Search: compat_admin'
           - '@compat_admin'
+          - enter / v open profile
+          - Esc back to timeline
+          not_contains: Search · Accounts
+      - send:
+          key: enter
+      - expect_screen:
+          contains: [Profile, '@compat_admin']
+          not_contains: loading…
+          stable_for: 200ms
+          timeout: 10s
+      - send:
+          key: esc
+      - expect_screen:
+          contains: ['1 Search: compat_admin', '@compat_admin', enter / v open profile]
+          timeout: 10s
+      - send:
+          key: esc
+      - expect_screen:
+          contains: 1 Home
+          not_contains: 'Search: compat_admin'
+          timeout: 10s
       - send: n
       - expect_screen:
           timeout: 10s
@@ -3885,7 +3909,7 @@ scenarios:
       - send: '/'
       - expect_screen:
           timeout: 10s
-          contains: Search
+          contains: Search · Posts
           stable_for: 200ms
       - send: compat-unsupported-vp9
       - send:
@@ -3933,7 +3957,7 @@ scenarios:
       - send: '/'
       - expect_screen:
           timeout: 10s
-          contains: Search
+          contains: Search · Posts
           stable_for: 200ms
       - send: compat-unicode
       - send:

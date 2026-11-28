@@ -439,13 +439,13 @@ scenarios:
           timeout: 10s
       - send: /
       - expect_screen:
-          contains: Search
+          contains: 'Search · Posts'
           timeout: 10s
       - send: '#compatroot'
       - send:
           key: enter
       - expect_screen:
-          contains: Search
+          contains: '1 Search: #compatroot'
           timeout: 10s
           not_contains: loading…
           stable_for: 150ms
@@ -459,11 +459,11 @@ scenarios:
       - send:
           key: esc
       - expect_screen:
-          contains: Search
+          contains: '1 Search: #compatroot'
           not_contains: Thread
           stable_for: 150ms
           timeout: 10s
-      - send: '1'
+      - send: {key: esc}
       - expect_screen:
           contains: Home
           timeout: 10s
@@ -495,10 +495,10 @@ scenarios:
       session:
       - {expect_screen: {contains: Home, timeout: 10s}}
       - {send: /}
-      - {expect_screen: {contains: Search, timeout: 10s}}
+      - {expect_screen: {contains: 'Search · Posts', timeout: 10s}}
       - {send: '#compatvideo'}
       - {send: {key: enter}}
-      - {expect_screen: {contains: Search, timeout: 10s, not_contains: loading…, stable_for: 150ms}}
+      - {expect_screen: {contains: '1 Search: #compatvideo', timeout: 10s, not_contains: loading…, stable_for: 150ms}}
       - {expect_screen: {matches: '(?m)^▌  video099 ', timeout: 10s, images: {min_count: 1}}}
       - {send: j}
       - {expect_screen: {matches: '(?m)^▌  video098 ', timeout: 10s, stable_for: 50ms, images: {min_count: 1}}}
@@ -918,10 +918,10 @@ scenarios:
       session:
       - {expect_screen: {contains: Home, timeout: 10s}}
       - {send: /}
-      - {expect_screen: {contains: Search, timeout: 10s}}
+      - {expect_screen: {contains: 'Search · Posts', timeout: 10s}}
       - {send: '#compatpictures'}
       - {send: {key: enter}}
-      - {expect_screen: {contains: Search, timeout: 10s, not_contains: loading…, stable_for: 150ms}}
+      - {expect_screen: {contains: '1 Search: #compatpictures', timeout: 10s, not_contains: loading…, stable_for: 150ms}}
       - {expect_screen: {matches: '(?m)^▌  pictures099 ', timeout: 10s, images: {min_count: 1}}}
       - {send: j}
       - {expect_screen: {matches: '(?m)^▌  pictures098 ', timeout: 10s, stable_for: 50ms, images: {min_count: 1}}}
@@ -1344,13 +1344,13 @@ scenarios:
           timeout: 10s
       - send: /
       - expect_screen:
-          contains: Search
+          contains: 'Search · Posts'
           timeout: 10s
       - send: '#compatcodec'
       - send:
           key: enter
       - expect_screen:
-          contains: Search
+          contains: '1 Search: #compatcodec'
           timeout: 10s
           not_contains: loading…
           stable_for: 150ms
@@ -1393,13 +1393,13 @@ scenarios:
           timeout: 10s
       - send: /
       - expect_screen:
-          contains: Search
+          contains: 'Search · Posts'
           timeout: 10s
       - send: '#compatroot'
       - send:
           key: enter
       - expect_screen:
-          contains: Search
+          contains: '1 Search: #compatroot'
           timeout: 10s
           not_contains: loading…
           stable_for: 150ms
@@ -1444,13 +1444,13 @@ scenarios:
           timeout: 10s
       - send: /
       - expect_screen:
-          contains: Search
+          contains: 'Search · Posts'
           timeout: 10s
       - send: '#compatroot'
       - send:
           key: enter
       - expect_screen:
-          contains: Search
+          contains: '1 Search: #compatroot'
           timeout: 10s
           not_contains: loading…
           stable_for: 150ms
@@ -1517,13 +1517,13 @@ scenarios:
           timeout: 10s
       - send: /
       - expect_screen:
-          contains: Search
+          contains: 'Search · Posts'
           timeout: 10s
       - send: '#compatdelete'
       - send:
           key: enter
       - expect_screen:
-          contains: Search
+          contains: '1 Search: #compatdelete'
           timeout: 10s
           not_contains: loading…
           stable_for: 150ms
@@ -1568,13 +1568,13 @@ scenarios:
           timeout: 10s
       - send: /
       - expect_screen:
-          contains: Search
+          contains: 'Search · Posts'
           timeout: 10s
       - send: '#compatroot'
       - send:
           key: enter
       - expect_screen:
-          contains: Search
+          contains: '1 Search: #compatroot'
           timeout: 10s
           not_contains: loading…
           stable_for: 150ms
@@ -1632,13 +1632,13 @@ scenarios:
           timeout: 10s
       - send: /
       - expect_screen:
-          contains: Search
+          contains: 'Search · Posts'
           timeout: 10s
       - send: '#compatroot'
       - send:
           key: enter
       - expect_screen:
-          contains: Search
+          contains: '1 Search: #compatroot'
           timeout: 10s
           not_contains: loading…
           stable_for: 150ms
@@ -1815,14 +1815,18 @@ scenarios:
       session:
       - expect_screen: {contains: Home, timeout: 10s}
       - send: /
-      - expect_screen: {contains: Search, timeout: 10s}
+      - expect_screen: {contains: 'Search · Posts', timeout: 10s}
       - send: bob
+      - send: {key: ctrl-t}
+      - expect_screen: {contains: 'Search · Accounts', timeout: 10s}
       - send: {key: enter}
-      - expect_screen: {contains: Search, not_contains: 'loading…', stable_for: 150ms, timeout: 10s}
-      - send: t
-      - expect_screen: {contains: ['Accounts', '@bob'], not_contains: 'loading…', stable_for: 150ms, timeout: 10s}
+      - expect_screen: {contains: ['1 Search: bob', '@bob', 'enter / v open profile', 'Esc back to timeline'], not_contains: ['loading…', 'Search · Accounts'], stable_for: 150ms, timeout: 10s}
       - send: {key: enter}
       - expect_screen: {contains: ['Profile', '@bob'], not_contains: 'loading…', stable_for: 150ms, timeout: 10s}
+      - send: {key: esc}
+      - expect_screen: {contains: ['1 Search: bob', '@bob', 'enter / v open profile'], timeout: 10s}
+      - send: {key: esc}
+      - expect_screen: {contains: '1 Home', not_contains: 'Search: bob', timeout: 10s}
       - send: q
   - assert: {exit_code: 0}
 - name: 'heavy: Unicode text name and alt text survive JSON'
@@ -1867,7 +1871,9 @@ scenarios:
       - expect_screen: {contains: 'Quote approval: anyone', timeout: 10s}
       - send: {key: ctrl-s}
       - expect_screen:
-          contains: [does not support quote approval, policies, 127.0.0.1]
+          # The server identity can wrap the feature name across error-box rows.
+          matches: '(?s)does not support quote.*approval.*policies'
+          contains: [127.0.0.1, any key closes this]
           timeout: 10s
       - send: {key: esc}
       - expect_screen: {contains: compatibility policy draft, not_contains: any key closes this, timeout: 10s}
