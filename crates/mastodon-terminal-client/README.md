@@ -42,10 +42,14 @@ With `CARGO_TARGET_DIR` set, put its `debug` directory on PATH instead.
 ## Install
 
 ```sh
-cargo install --locked --git https://github.com/nao1215/social-terminal-clients mastodon-terminal-client
+brew install nao1215/tap/mstdn
 ```
 
-Building it needs Rust 1.90 or later. It is not on crates.io.
+```sh
+cargo install --locked mastodon-terminal-client
+```
+
+Building it needs Rust 1.90 or later. Binaries for Linux, macOS and Windows are on the [releases page](https://github.com/nao1215/social-terminal-clients/releases), tagged `mstdn-v<version>`.
 
 ## Full-screen client
 

@@ -29,6 +29,18 @@ PATH="$PWD/target/debug:$PATH" atago run crates/nostr-terminal-client/doc/verify
 
 With `CARGO_TARGET_DIR` set, put its `debug` directory on PATH instead.
 
+## Install
+
+```sh
+brew install nao1215/tap/nstr
+```
+
+```sh
+cargo install --locked nostr-terminal-client
+```
+
+Building it needs Rust 1.90 or later. Binaries for Linux, macOS and Windows are on the [releases page](https://github.com/nao1215/social-terminal-clients/releases), tagged `nstr-v<version>`.
+
 ## Build
 
 ```sh
