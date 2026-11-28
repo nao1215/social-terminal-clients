@@ -40,52 +40,48 @@ Unofficial [Bluesky](https://bsky.app), [Misskey](https://misskey-hub.net), [Mas
 |---|---|---|---|
 | bsky | `bluesky-terminal-client` | [![bsky on crates.io](https://img.shields.io/crates/v/bluesky-terminal-client?label=crates.io)](https://crates.io/crates/bluesky-terminal-client) | ![bsky downloads from crates.io](https://img.shields.io/crates/d/bluesky-terminal-client?label=crates.io) |
 | msky | `misskey-terminal-client` | [![msky on crates.io](https://img.shields.io/crates/v/misskey-terminal-client?label=crates.io)](https://crates.io/crates/misskey-terminal-client) | ![msky downloads from crates.io](https://img.shields.io/crates/d/misskey-terminal-client?label=crates.io) |
-| mstdn | `mastodon-terminal-client` | Unreleased | Not on crates.io |
-| nstr | `nostr-terminal-client` | Unreleased | Not on crates.io |
+| mstdn | `mastodon-terminal-client` | [![mstdn on crates.io](https://img.shields.io/crates/v/mastodon-terminal-client?label=crates.io)](https://crates.io/crates/mastodon-terminal-client) | ![mstdn downloads from crates.io](https://img.shields.io/crates/d/mastodon-terminal-client?label=crates.io) |
+| nstr | `nostr-terminal-client` | [![nstr on crates.io](https://img.shields.io/crates/v/nostr-terminal-client?label=crates.io)](https://crates.io/crates/nostr-terminal-client) | ![nstr downloads from crates.io](https://img.shields.io/crates/d/nostr-terminal-client?label=crates.io) |
 
 ## Install
 
-bsky and msky with Homebrew:
+With Homebrew:
 
 ```sh
-brew install nao1215/tap/bsky nao1215/tap/msky
+brew install nao1215/tap/bsky nao1215/tap/msky nao1215/tap/mstdn nao1215/tap/nstr
 ```
 
 With Cargo:
 
 ```sh
-cargo install --locked bluesky-terminal-client misskey-terminal-client
+cargo install --locked bluesky-terminal-client misskey-terminal-client mastodon-terminal-client nostr-terminal-client
 ```
 
 With cargo-binstall, which fetches a release binary:
 
 ```sh
-cargo binstall bluesky-terminal-client misskey-terminal-client
+cargo binstall bluesky-terminal-client misskey-terminal-client mastodon-terminal-client nostr-terminal-client
 ```
 
-mstdn and nstr have no release yet and install from this repository:
-
-```sh
-cargo install --locked --git https://github.com/nao1215/social-terminal-clients mastodon-terminal-client nostr-terminal-client
-```
-
-bsky's binaries for Linux, macOS and Windows are on the [releases page](https://github.com/nao1215/social-terminal-clients/releases), tagged `v<version>`. Each release carries the license texts of the crates its binaries contain in `<client>-<version>-THIRD_PARTY_LICENSES.html`. Building needs Rust 1.90 or later.
+The binaries of bsky, mstdn and nstr for Linux, macOS and Windows are on the [releases page](https://github.com/nao1215/social-terminal-clients/releases): bsky's are tagged `v<version>`, mstdn's `mstdn-v<version>` and nstr's `nstr-v<version>`. Each release carries the license texts of the crates its binaries contain in `<client>-<version>-THIRD_PARTY_LICENSES.html`. Building needs Rust 1.90 or later.
 
 <details>
 <summary>Verifying a release</summary>
 
-A release carries `checksums.txt`, a cosign signature of it and SLSA provenance, and each archive has a GitHub build attestation (bsky from 0.13.0 on). Run each line in the directory with the downloaded files. `<tag>` is the release, for example `v0.15.0`, and `<archive>` is the file you downloaded.
+A release carries `checksums.txt`, a cosign signature of it and SLSA provenance, and each archive has a GitHub build attestation (bsky from 0.13.0 on). Run each line in the directory with the downloaded files. `<tag>` is the release, for example `v0.15.0` or `mstdn-v0.1.0`, `<archive>` is the file you downloaded, and `<workflow>` is `release.yml` for bsky, `release-mstdn.yml` for mstdn and `release-nstr.yml` for nstr.
 
 ```sh
 sha256sum --ignore-missing --check checksums.txt
 ```
 
 ```sh
-cosign verify-blob --bundle checksums.txt.sigstore.json --certificate-identity "https://github.com/nao1215/social-terminal-clients/.github/workflows/release.yml@refs/tags/<tag>" --certificate-oidc-issuer https://token.actions.githubusercontent.com checksums.txt
+cosign verify-blob --bundle checksums.txt.sigstore.json --certificate-identity "https://github.com/nao1215/social-terminal-clients/.github/workflows/<workflow>@refs/tags/<tag>" --certificate-oidc-issuer https://token.actions.githubusercontent.com checksums.txt
 ```
 
+`<provenance>` is the release's `.intoto.jsonl` file: `bsky-v0.15.0.intoto.jsonl` for bsky 0.15.0, `mstdn-v0.1.0.intoto.jsonl` for mstdn 0.1.0.
+
 ```sh
-slsa-verifier verify-artifact <archive> --provenance-path bsky-<tag>.intoto.jsonl --source-uri github.com/nao1215/social-terminal-clients --source-tag <tag>
+slsa-verifier verify-artifact <archive> --provenance-path <provenance> --source-uri github.com/nao1215/social-terminal-clients --source-tag <tag>
 ```
 
 ```sh
